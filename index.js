@@ -57,6 +57,15 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("reject-call", ({ toUserId }) => {
+    const targetSocketId = onlineUsers[toUserId];
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("call-rejected", {
+        fromUserId: socket.username
+      });
+    }
+  });
+
   socket.on("ice-candidate", ({ toUserId, candidate }) => {
     const targetSocketId = onlineUsers[toUserId];
     if (targetSocketId) {
