@@ -68,14 +68,19 @@ io.on("connection", (socket) => {
   });
 
   // 🔄 Invite someone to join a conference call
-  socket.on("join-call", ({ joiningUserId }) => {
-    for (const [username, sockId] of Object.entries(onlineUsers)) {
-      if (username !== joiningUserId) {
-        io.to(sockId).emit("join-call", { joiningUserId });
-      }
-    }
-  });
-
+//   socket.on("join-call", ({ joiningUserId }) => {
+//     for (const [username, sockId] of Object.entries(onlineUsers)) {
+//       if (username !== joiningUserId) {
+//         io.to(sockId).emit("join-call", { joiningUserId });
+//       }
+//     }
+//   });
+socket.on("join-call", ({ joiningUserId }) => {
+  const invitedSocketId = users[joiningUserId]; // Assuming users = { username: socket.id }
+  if (invitedSocketId) {
+    io.to(invitedSocketId).emit("join-call", { joiningUserId: socket.username });
+  }
+});
   socket.on("disconnect", () => {
     if (socket.username) {
       delete onlineUsers[socket.username];
