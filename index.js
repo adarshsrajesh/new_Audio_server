@@ -8,8 +8,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "https://audio-chat-rho.vercel.app/",
-     
+    origin: "*", // Change to your frontend domain in production
     methods: ["GET", "POST"],
   },
 });
@@ -27,7 +26,7 @@ function broadcastOnlineUsers() {
 }
 
 io.on("connection", (socket) => {
-  console.log(" New socket connected:", socket.id);
+  console.log("✅ New socket connected:", socket.id);
 
   socket.on("login", (username) => {
     if (!username) return;
@@ -80,12 +79,12 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     if (socket.username) {
       delete onlineUsers[socket.username];
-      console.log(` ${socket.username} disconnected`);
+      console.log(`❌ ${socket.username} disconnected`);
       broadcastOnlineUsers();
     }
   });
 });
 
-server.listen(PORT, () => {
-  console.log(` Signaling server running at http://localhost:${PORT}`);
+server.listen(() => {
+  console.log(`🚀 Signaling server running at http://192.168.137.69:${PORT}`);
 });
