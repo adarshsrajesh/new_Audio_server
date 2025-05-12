@@ -70,7 +70,7 @@ io.on("connection", (socket) => {
   // 🔄 Invite someone to join a conference call
   socket.on("join-call", ({ joiningUserId }) => {
     for (const [username, sockId] of Object.entries(onlineUsers)) {
-      if (username == joiningUserId) {
+      if (username !== joiningUserId) {
         io.to(sockId).emit("join-call", { joiningUserId });
       }
     }
