@@ -8,7 +8,8 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "*", // Change to your frontend domain in production
+    origin: "https://audio-chat-rho.vercel.app/",
+     
     methods: ["GET", "POST"],
   },
 });
