@@ -203,21 +203,16 @@ io.on("connection", (socket) => {
   });
 
   socket.on("participant-left", ({ toUserId, leavingUserId }) => {
-    try {
-      if (!toUserId || !leavingUserId) {
-        socket.emit("error", "Invalid participant data");
-        return;
-      }
+    const targetSocketId = onlineUsers[toUserId];
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("participant-left", { leavingUserId });
+    }
+  });
 
-      const targetSocketId = onlineUsers[toUserId];
-      if (targetSocketId) {
-        io.to(targetSocketId).emit("participant-left", {
-          leavingUserId: leavingUserId
-        });
-      }
-    } catch (error) {
-      console.error("Participant left notification error:", error);
-      socket.emit("error", "Failed to notify participants");
+  socket.on("dtmf-tone", ({ toUserId, digit }) => {
+    const targetSocketId = onlineUsers[toUserId];
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("dtmf-tone", { digit });
     }
   });
 
