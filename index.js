@@ -183,6 +183,44 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("new-participant-joined", ({ toUserId, newParticipant }) => {
+    try {
+      if (!toUserId || !newParticipant) {
+        socket.emit("error", "Invalid participant data");
+        return;
+      }
+
+      const targetSocketId = onlineUsers[toUserId];
+      if (targetSocketId) {
+        io.to(targetSocketId).emit("new-participant-joined", {
+          newParticipant: newParticipant
+        });
+      }
+    } catch (error) {
+      console.error("New participant notification error:", error);
+      socket.emit("error", "Failed to notify participants");
+    }
+  });
+
+  socket.on("participant-left", ({ toUserId, leavingUserId }) => {
+    try {
+      if (!toUserId || !leavingUserId) {
+        socket.emit("error", "Invalid participant data");
+        return;
+      }
+
+      const targetSocketId = onlineUsers[toUserId];
+      if (targetSocketId) {
+        io.to(targetSocketId).emit("participant-left", {
+          leavingUserId: leavingUserId
+        });
+      }
+    } catch (error) {
+      console.error("Participant left notification error:", error);
+      socket.emit("error", "Failed to notify participants");
+    }
+  });
+
   socket.on("disconnect", () => {
     try {
       if (socket.username) {
