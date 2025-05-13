@@ -10,7 +10,8 @@ const server = http.createServer(app);
 // Example: origin: "https://yourdomain.com"
 const io = new Server(server, {
   cors: {
-    origin: "https://audio-chat-rho.vercel.app/",
+    // origin: "https://audio-chat-rho.vercel.app/",
+    origin:"*",
     methods: ["GET", "POST"],
   },
 });
