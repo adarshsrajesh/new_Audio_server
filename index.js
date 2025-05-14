@@ -65,12 +65,22 @@ io.on("connection", (socket) => {
       }
 
       const targetSocketId = onlineUsers[toUserId];
-      if (targetSocketId) {
-        io.to(targetSocketId).emit("incoming-call", {
-          fromUserId: socket.username,
-          offer,
-        });
+      if (!targetSocketId) {
+        socket.emit("error", "User is not online");
+        return;
       }
+
+      // Check if the caller is online
+      if (!socket.username || !onlineUsers[socket.username]) {
+        socket.emit("error", "You must be logged in to make calls");
+        return;
+      }
+
+      console.log(`📞 ${socket.username} calling ${toUserId}`);
+      io.to(targetSocketId).emit("incoming-call", {
+        fromUserId: socket.username,
+        offer,
+      });
     } catch (error) {
       console.error("Call error:", error);
       socket.emit("error", "Call failed");
@@ -85,12 +95,22 @@ io.on("connection", (socket) => {
       }
 
       const targetSocketId = onlineUsers[toUserId];
-      if (targetSocketId) {
-        io.to(targetSocketId).emit("call-answered", {
-          fromUserId: socket.username,
-          answer,
-        });
+      if (!targetSocketId) {
+        socket.emit("error", "User is not online");
+        return;
       }
+
+      // Check if the answerer is online
+      if (!socket.username || !onlineUsers[socket.username]) {
+        socket.emit("error", "You must be logged in to answer calls");
+        return;
+      }
+
+      console.log(`✅ ${socket.username} answered call from ${toUserId}`);
+      io.to(targetSocketId).emit("call-answered", {
+        fromUserId: socket.username,
+        answer,
+      });
     } catch (error) {
       console.error("Answer error:", error);
       socket.emit("error", "Answer failed");
@@ -105,11 +125,21 @@ io.on("connection", (socket) => {
       }
 
       const targetSocketId = onlineUsers[toUserId];
-      if (targetSocketId) {
-        io.to(targetSocketId).emit("call-rejected", {
-          fromUserId: socket.username
-        });
+      if (!targetSocketId) {
+        socket.emit("error", "User is not online");
+        return;
       }
+
+      // Check if the rejecter is online
+      if (!socket.username || !onlineUsers[socket.username]) {
+        socket.emit("error", "You must be logged in to reject calls");
+        return;
+      }
+
+      console.log(`❌ ${socket.username} rejected call from ${toUserId}`);
+      io.to(targetSocketId).emit("call-rejected", {
+        fromUserId: socket.username
+      });
     } catch (error) {
       console.error("Reject error:", error);
       socket.emit("error", "Reject failed");
@@ -124,12 +154,21 @@ io.on("connection", (socket) => {
       }
 
       const targetSocketId = onlineUsers[toUserId];
-      if (targetSocketId) {
-        io.to(targetSocketId).emit("ice-candidate", {
-          fromUserId: socket.username,
-          candidate,
-        });
+      if (!targetSocketId) {
+        socket.emit("error", "User is not online");
+        return;
       }
+
+      // Check if the sender is online
+      if (!socket.username || !onlineUsers[socket.username]) {
+        socket.emit("error", "You must be logged in to send ICE candidates");
+        return;
+      }
+
+      io.to(targetSocketId).emit("ice-candidate", {
+        fromUserId: socket.username,
+        candidate,
+      });
     } catch (error) {
       console.error("ICE candidate error:", error);
       socket.emit("error", "ICE candidate failed");
