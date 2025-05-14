@@ -20,41 +20,30 @@ app.use(express.json());
 
 const PORT = 5000;
 
-// Store online users
-const onlineUsers = new Map();
+// Track online users: { username: socketId }
+const onlineUsers = {};
 
 function broadcastOnlineUsers() {
-  io.emit("online-users", Array.from(onlineUsers.keys()));
+  io.emit("online-users", Object.keys(onlineUsers));
 }
 
 io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
+  console.log("✅ New socket connected:", socket.id);
 
   socket.on("login", (username) => {
-    console.log("User logged in:", username);
-    onlineUsers.set(username, socket.id);
-    
-    // Notify all users about the new user
-    io.emit("user-joined", username);
-    
-    // Send current online users to the new user
-    socket.emit("online-users", Array.from(onlineUsers.keys()));
-  });
-
-  socket.on("get-online-users", () => {
-    socket.emit("online-users", Array.from(onlineUsers.keys()));
-  });
-
-  socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
-    // Find and remove the disconnected user
-    for (const [username, id] of onlineUsers.entries()) {
-      if (id === socket.id) {
-        onlineUsers.delete(username);
-        // Notify all users about the user leaving
-        io.emit("user-left", username);
-        break;
+    try {
+      if (!username || typeof username !== "string") {
+        socket.emit("error", "Invalid username");
+        return;
       }
+
+      socket.username = username;
+      onlineUsers[username] = socket.id;
+      console.log(`👤 ${username} logged in`);
+      broadcastOnlineUsers();
+    } catch (error) {
+      console.error("Login error:", error);
+      socket.emit("error", "Login failed");
     }
   });
 
@@ -65,7 +54,7 @@ io.on("connection", (socket) => {
         return;
       }
 
-      const targetSocketId = onlineUsers.get(toUserId);
+      const targetSocketId = onlineUsers[toUserId];
       if (targetSocketId) {
         io.to(targetSocketId).emit("incoming-call", {
           fromUserId: socket.username,
@@ -85,7 +74,7 @@ io.on("connection", (socket) => {
         return;
       }
 
-      const targetSocketId = onlineUsers.get(toUserId);
+      const targetSocketId = onlineUsers[toUserId];
       if (targetSocketId) {
         io.to(targetSocketId).emit("call-answered", {
           fromUserId: socket.username,
@@ -105,7 +94,7 @@ io.on("connection", (socket) => {
         return;
       }
 
-      const targetSocketId = onlineUsers.get(toUserId);
+      const targetSocketId = onlineUsers[toUserId];
       if (targetSocketId) {
         io.to(targetSocketId).emit("call-rejected", {
           fromUserId: socket.username
@@ -124,7 +113,7 @@ io.on("connection", (socket) => {
         return;
       }
 
-      const targetSocketId = onlineUsers.get(toUserId);
+      const targetSocketId = onlineUsers[toUserId];
       if (targetSocketId) {
         io.to(targetSocketId).emit("ice-candidate", {
           fromUserId: socket.username,
@@ -144,7 +133,7 @@ io.on("connection", (socket) => {
         return;
       }
 
-      const invitedSocketId = onlineUsers.get(joiningUserId);
+      const invitedSocketId = onlineUsers[joiningUserId];
       if (invitedSocketId) {
         io.to(invitedSocketId).emit("incoming-invite", {
           fromUserId: socket.username
@@ -163,7 +152,7 @@ io.on("connection", (socket) => {
         return;
       }
 
-      const inviterSocketId = onlineUsers.get(fromUserId);
+      const inviterSocketId = onlineUsers[fromUserId];
       if (inviterSocketId) {
         io.to(inviterSocketId).emit("invite-accepted", {
           fromUserId: socket.username
@@ -182,7 +171,7 @@ io.on("connection", (socket) => {
         return;
       }
 
-      const inviterSocketId = onlineUsers.get(fromUserId);
+      const inviterSocketId = onlineUsers[fromUserId];
       if (inviterSocketId) {
         io.to(inviterSocketId).emit("invite-rejected", {
           fromUserId: socket.username
@@ -201,7 +190,7 @@ io.on("connection", (socket) => {
         return;
       }
 
-      const targetSocketId = onlineUsers.get(toUserId);
+      const targetSocketId = onlineUsers[toUserId];
       if (targetSocketId) {
         io.to(targetSocketId).emit("new-participant-joined", {
           newParticipant: newParticipant
@@ -214,16 +203,28 @@ io.on("connection", (socket) => {
   });
 
   socket.on("participant-left", ({ toUserId, leavingUserId }) => {
-    const targetSocketId = onlineUsers.get(toUserId);
+    const targetSocketId = onlineUsers[toUserId];
     if (targetSocketId) {
       io.to(targetSocketId).emit("participant-left", { leavingUserId });
     }
   });
 
   socket.on("dtmf-tone", ({ toUserId, digit }) => {
-    const targetSocketId = onlineUsers.get(toUserId);
+    const targetSocketId = onlineUsers[toUserId];
     if (targetSocketId) {
       io.to(targetSocketId).emit("dtmf-tone", { digit });
+    }
+  });
+
+  socket.on("disconnect", () => {
+    try {
+      if (socket.username) {
+        delete onlineUsers[socket.username];
+        console.log(`❌ ${socket.username} disconnected`);
+        broadcastOnlineUsers();
+      }
+    } catch (error) {
+      console.error("Disconnect error:", error);
     }
   });
 });
