@@ -47,6 +47,16 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("get-online-users", () => {
+    try {
+      console.log(`📋 Sending online users to ${socket.username}`);
+      socket.emit("online-users", Object.keys(onlineUsers));
+    } catch (error) {
+      console.error("Get online users error:", error);
+      socket.emit("error", "Failed to get online users");
+    }
+  });
+
   socket.on("call-user", ({ toUserId, offer }) => {
     try {
       if (!toUserId || !offer) {
