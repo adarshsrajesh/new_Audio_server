@@ -2,9 +2,30 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
+const twilio = require("twilio");
+const dotenv = require("dotenv");
 
 const app = express();
 const server = http.createServer(app);
+dotenv.config();
+
+//TURN FROM TWILIO
+
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const client = twilio(accountSid, authToken);
+
+app.get('/turn-credentials', async (req, res) => {
+
+async function createToken() {
+  const token = await client.tokens.create();
+
+  console.log(token.iceServers);
+}
+
+createToken();
+});
+
 
 // TODO: In production, replace "*" with your frontend domain
 // Example: origin: "https://yourdomain.com"
