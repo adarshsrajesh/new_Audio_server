@@ -11,8 +11,8 @@ dotenv.config();
 
 //TURN FROM TWILIO
 
-const accountSid = "AC92a16753bdd199210386f70b2eb07f18" || process.env.TWILIO_ACCOUNT_SID;
-const authToken = "c5fb9e9a1e12ec2194eaea71315e376b" || process.env.TWILIO_AUTH_TOKEN;
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
 const client = twilio(accountSid, authToken);
 
 app.get('/turn-credentials', async (req, res) => {
