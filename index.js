@@ -21,6 +21,8 @@ async function createToken() {
   const token = await client.tokens.create();
 
   console.log(token.iceServers);
+
+  res.json(token.iceServers);
 }
 
 createToken();
