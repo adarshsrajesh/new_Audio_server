@@ -9,37 +9,39 @@ const app = express();
 const server = http.createServer(app);
 dotenv.config();
 
-//TURN FROM TWILIO
+// Configure CORS
+app.use(cors({
+  origin: ['http://127.0.0.1:5501', 'http://localhost:5501', 'http://127.0.0.1:5500', 'http://localhost:5500'],
+  methods: ['GET', 'POST'],
+  credentials: true
+}));
 
+app.use(express.json());
+
+//TURN FROM TWILIO
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const client = twilio(accountSid, authToken);
 
 app.get('/turn-credentials', async (req, res) => {
-
-async function createToken() {
-  const token = await client.tokens.create();
-
-  console.log(token.iceServers);
-
-  res.json(token.iceServers);
-}
-
-createToken();
+  try {
+    const token = await client.tokens.create();
+    console.log('TURN config:', token.iceServers);
+    res.json({ iceServers: token.iceServers });
+  } catch (error) {
+    console.error('Error creating TURN token:', error);
+    res.status(500).json({ error: 'Failed to get TURN credentials' });
+  }
 });
 
-
-// TODO: In production, replace "*" with your frontend domain
-// Example: origin: "https://yourdomain.com"
+// Configure Socket.IO with CORS
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: ['http://127.0.0.1:5501', 'http://localhost:5501', 'http://127.0.0.1:5500', 'http://localhost:5500'],
     methods: ["GET", "POST"],
+    credentials: true
   },
 });
-
-app.use(cors());
-app.use(express.json());
 
 const PORT = 5000;
 
@@ -171,26 +173,30 @@ io.on("connection", (socket) => {
 
   socket.on("ice-candidate", ({ toUserId, candidate }) => {
     try {
-      if (!toUserId || !candidate) {
+      if (!toUserId || !candidate || !candidate.candidate) {
+        console.error("Invalid ICE candidate data:", { toUserId, candidate });
         socket.emit("error", "Invalid ICE candidate data");
         return;
       }
 
       const targetSocketId = onlineUsers[toUserId];
       if (!targetSocketId) {
+        console.error("Target user not found:", toUserId);
         socket.emit("error", "User is not online");
         return;
       }
 
       // Check if the sender is online
       if (!socket.username || !onlineUsers[socket.username]) {
+        console.error("Sender not logged in:", socket.username);
         socket.emit("error", "You must be logged in to send ICE candidates");
         return;
       }
 
+      console.log(`ICE candidate from ${socket.username} to ${toUserId}:`, candidate);
       io.to(targetSocketId).emit("ice-candidate", {
         fromUserId: socket.username,
-        candidate,
+        candidate: candidate
       });
     } catch (error) {
       console.error("ICE candidate error:", error);
